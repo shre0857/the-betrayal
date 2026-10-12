@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THE BETRAYAL — A Dark Fantasy Mystery Card Game</title>
+  <meta name="description" content="The Crown Has Fallen. Find the Traitor. A dark medieval fantasy mystery, deduction, and interactive card game.">
+  
+  <!-- Google Fonts: Medieval Serif + Modern Readable UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient Audio Indicator / Mute Toggle -->
+  <div class="audio-control-fixed">
+    <button id="btn-sound-toggle" class="btn-sound" aria-label="Toggle atmospheric sound" title="Toggle sound">
+      <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+      </svg>
+      <svg class="icon-sound-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
+      </svg>
+      <span class="sound-text">SOUND: <span id="sound-state-label">OFF</span></span>
+    </button>
+  </div>
+
+  <!-- Background Animated Atmosphere (Fog, Castle Silhouette, Embers Canvas) -->
+  <div class="atmosphere-container" aria-hidden="true">
+    <div class="bg-castle-silhouette"></div>
+    <div class="bg-fog-layer fog-layer-1"></div>
+    <div class="bg-fog-layer fog-layer-2"></div>
+    <div class="bg-vignette"></div>
+    <canvas id="canvas-embers" class="embers-canvas"></canvas>
+  </div>
+
+  <!-- Main Game Container -->
+  <main id="app-container" class="app-container">
+
+    <!-- ========================================== -->
+    <!-- SCREEN 1: LANDING PAGE                     -->
+    <!-- ========================================== -->
+    <section id="screen-landing" class="game-screen screen-active">
+      <div class="landing-content">
+        <div class="royal-seal-badge">
+          <svg class="crest-svg" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="30" stroke="#C5A15B" stroke-width="2" stroke-dasharray="4 2"/>
+            <path d="M32 10 L37 22 L50 22 L40 30 L44 42 L32 34 L20 42 L24 30 L14 22 L27 22 Z" fill="#8F1D2C" stroke="#C5A15B" stroke-width="1.5"/>
+            <circle cx="32" cy="32" r="6" fill="#C5A15B"/>
+          </svg>
+          <span class="decree-text">ROYAL INQUEST &bull; SEVENTH ECLIPSE</span>
+        </div>
+
+        <h1 class="game-title">THE BETRAYAL</h1>
+        <p class="game-tagline">“The Crown Has Fallen. Find the Traitor.”</p>
+        
+        <div class="mystery-summary-box">
+          <div class="corner-filigree top-left"></div>
+          <div class="corner-filigree top-right"></div>
+          <div class="corner-filigree bottom-left"></div>
+          <div class="corner-filigree bottom-right"></div>
+          <p class="mystery-summary-text">
+            Under the veil of midnight, the King was struck down inside his locked royal chambers.
+            The heavy fortress gates are barred. Three trusted lords walked the private corridor before dawn.
+            Examine the royal relics, unseal confidential letters, and expose the traitor before the kingdom dissolves in civil war.
+          </p>
+        </div>
+
+        <div class="feature-pills">
+          <div class="feature-pill">
+            <span class="pill-icon">🔍</span>
+            <span class="pill-title">INVESTIGATE</span>
+            <span class="pill-desc">Interrogate 3 royal suspects</span>
+          </div>
+          <div class="feature-pill">
+            <span class="pill-icon">📜</span>
+            <span class="pill-title">COLLECT CLUES</span>
+            <span class="pill-desc">Unseal 5 hidden evidence cards</span>
+          </div>
+          <div class="feature-pill">
+            <span class="pill-icon">⚔️</span>
+            <span class="pill-title">EXPOSE TRAITOR</span>
+            <span class="pill-desc">Deliver swift royal justice</span>
+          </div>
+        </div>
+
+        <div class="landing-cta-container">
+          <button id="btn-enter-kingdom" class="btn-royal btn-primary">
+            <span class="btn-glow"></span>
+            <span class="btn-content">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+              ENTER THE KINGDOM
+            </span>
+          </button>
+        </div>
+
+        <div id="landing-best-score" class="high-score-display hidden">
+          <span class="crown-icon">👑</span> BEST INQUEST SCORE: <strong id="val-best-score-landing">0</strong> PTS
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN 2: CASE BRIEFING                    -->
+    <!-- ========================================== -->
+    <section id="screen-briefing" class="game-screen hidden">
+      <div class="briefing-container">
+        <div class="briefing-header">
+          <span class="royal-subtitle">CONFIDENTIAL INVESTIGATION DOSSIER</span>
+          <h2 class="briefing-title">THE KING’S MURDER</h2>
+          <div class="divider-gold">
+            <span class="divider-diamond"></span>
+          </div>
+        </div>
+
+        <div class="briefing-proclamation">
+          <p class="proclamation-text">
+            “The King is dead. The castle gates are sealed. Three members of the royal court had access to the King's private chambers. Discover the hidden evidence, examine their testimonies, and expose the traitor before time runs out.”
+          </p>
+        </div>
+
+        <div class="briefing-suspects-preview">
+          <h3 class="section-label">PERSONS OF INTEREST</h3>
+          <div class="briefing-suspects-grid">
+            
+            <!-- Suspect A Preview -->
+            <div class="briefing-suspect-card">
+              <div class="suspect-avatar-box">
+                <div class="avatar-svg-container" id="avatar-aldric-briefing"></div>
+                <div class="avatar-badge northern">NORTH</div>
+              </div>
+              <div class="suspect-brief-info">
+                <h4 class="suspect-name">Lord Aldric</h4>
+                <span class="suspect-role">The Northern Lord</span>
+                <p class="suspect-trait">Honourable, reserved, and fiercely protective of his territory.</p>
+                <div class="alibi-quote">
+                  <span class="quote-mark">“</span>I was inspecting the northern gate on the King's final night.<span class="quote-mark">”</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Suspect B Preview -->
+            <div class="briefing-suspect-card">
+              <div class="suspect-avatar-box">
+                <div class="avatar-svg-container" id="avatar-seraphine-briefing"></div>
+                <div class="avatar-badge crown">COUNCIL</div>
+              </div>
+              <div class="suspect-brief-info">
+                <h4 class="suspect-name">Lady Seraphine</h4>
+                <span class="suspect-role">The Royal Advisor</span>
+                <p class="suspect-trait">Intelligent, highly persuasive, and relentlessly ambitious.</p>
+                <div class="alibi-quote">
+                  <span class="quote-mark">“</span>I was reading in the royal library. I heard an argument nearby, but I saw no one.<span class="quote-mark">”</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Suspect C Preview -->
+            <div class="briefing-suspect-card highlight-glow">
+              <div class="suspect-avatar-box">
+                <div class="avatar-svg-container" id="avatar-malrec-briefing"></div>
+                <div class="avatar-badge treasury">TREASURY</div>
+              </div>
+              <div class="suspect-brief-info">
+                <h4 class="suspect-name">Lord Malrec</h4>
+                <span class="suspect-role">The Royal Treasurer</span>
+                <p class="suspect-trait">Vastly wealthy, secretive, and obsessed with the crown’s gold.</p>
+                <div class="alibi-quote">
+                  <span class="quote-mark">“</span>I never entered the King's chambers. The treasury key was accessible to several officials.<span class="quote-mark">”</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="briefing-protocol-notes">
+          <div class="protocol-card">
+            <span class="protocol-icon">⚖️</span>
+            <div>
+              <strong>INQUISITOR PROTOCOL:</strong> You possess <strong>3 Investigation Inquiries</strong>. Each suspect interrogation uses 1 inquiry. All 5 evidence cards can be inspected freely. Deduction must be proven before making your final accusation.
+            </div>
+          </div>
+        </div>
+
+        <div class="briefing-actions">
+          <button id="btn-back-to-landing" class="btn-royal btn-secondary">
+            ← BACK TO GATES
+          </button>
+          <button id="btn-start-investigation" class="btn-royal btn-primary">
+            <span class="btn-glow"></span>
+            <span class="btn-content">
+              BEGIN INVESTIGATION →
+            </span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN 3: MAIN INVESTIGATION ARENA         -->
+    <!-- ========================================== -->
+    <section id="screen-arena" class="game-screen hidden">
+      
+      <!-- Sticky Top Status HUD -->
+      <header class="arena-hud">
+        <div class="hud-brand">
+          <span class="hud-crest">⚔️</span>
+          <div class="hud-title-wrap">
+            <span class="hud-title">THE BETRAYAL</span>
+            <span class="hud-subtitle">ROYAL INVESTIGATION ARENA</span>
+          </div>
+        </div>
+
+        <div class="hud-stats">
+          <!-- Attempts Remaining -->
+          <div class="hud-stat-box" id="hud-attempts-box" title="Interrogation attempts remaining">
+            <div class="stat-icon-wrap">
+              <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <div class="stat-text-wrap">
+              <span class="stat-label">INVESTIGATION ATTEMPTS</span>
+              <div class="attempts-indicator" id="attempts-badges">
+                <span class="attempt-badge active" data-index="1"></span>
+                <span class="attempt-badge active" data-index="2"></span>
+                <span class="attempt-badge active" data-index="3"></span>
+                <strong class="stat-num" id="val-attempts">3</strong> / 3
+              </div>
+            </div>
+          </div>
+
+          <!-- Clues Discovered -->
+          <div class="hud-stat-box" title="Evidence uncovered">
+            <div class="stat-icon-wrap">
+              <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <div class="stat-text-wrap">
+              <span class="stat-label">CLUES DISCOVERED</span>
+              <div class="clues-progress-wrap">
+                <span class="stat-value"><strong id="val-clues-count">0</strong> / 5</span>
+                <div class="progress-bar-bg">
+                  <div id="clues-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Score -->
+          <div class="hud-stat-box" title="Investigation score">
+            <div class="stat-icon-wrap gold">
+              <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="7"></circle>
+                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+              </svg>
+            </div>
+            <div class="stat-text-wrap">
+              <span class="stat-label">INVESTIGATION SCORE</span>
+              <span class="stat-value gold"><strong id="val-score">0</strong> PTS</span>
+            </div>
+          </div>
+
+          <!-- Accusation CTA in Header -->
+          <button id="btn-header-accuse" class="btn-royal btn-accuse-pulse" title="Make an accusation against a suspect">
+            <span class="btn-glow-crimson"></span>
+            <span class="btn-content">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              MAKE ACCUSATION
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Arena Content Grid -->
+      <div class="arena-content">
+        
+        <!-- Left / Center Column: Evidence and Suspects -->
+        <div class="arena-investigation-flow">
+          
+          <!-- SECTION A: EVIDENCE CARDS (5 Interactive Sealed Cards) -->
+          <div class="arena-section evidence-section">
+            <div class="section-header-bar">
+              <div class="section-title-wrap">
+                <span class="section-icon">📜</span>
+                <h3 class="section-heading">ROYAL CHAMBER EVIDENCE</h3>
+              </div>
+              <span class="section-hint">Click cards to break wax seals and examine evidence</span>
+            </div>
+
+            <div class="evidence-cards-grid" id="evidence-cards-container">
+              <!-- Card 1 -->
+              <div class="evidence-card" data-clue-id="1" tabindex="0" role="button" aria-label="Evidence 1: The Bloody Dagger">
+                <div class="card-inner">
+                  <!-- Front / Sealed State -->
+                  <div class="card-face card-front">
+                    <div class="seal-badge wax-seal">
+                      <div class="wax-inner">
+                        <svg class="seal-dagger-svg" viewBox="0 0 24 24" fill="none" stroke="#C5A15B" stroke-width="2">
+                          <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
+                          <line x1="13" y1="19" x2="19" y2="13"></line>
+                          <line x1="16" y1="16" x2="20" y2="20"></line>
+                          <line x1="19" y1="21" x2="21" y2="19"></line>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="card-index-label">EVIDENCE #01</span>
+                    <h4 class="sealed-title">ROYAL WEAPON</h4>
+                    <p class="sealed-hint">Found beside the King’s throne</p>
+                    <span class="action-prompt">CLICK TO BREAK SEAL</span>
+                  </div>
+                  <!-- Back / Revealed State -->
+                  <div class="card-face card-back">
+                    <div class="card-revealed-tag">REVEALED</div>
+                    <div class="clue-icon-small">🗡️</div>
+                    <h4 class="revealed-title">THE BLOODY DAGGER</h4>
+                    <p class="revealed-text">
+                      “A dagger was discovered near the King's private chambers. Its decorative handle bears the royal treasury's insignia.”
+                    </p>
+                    <div class="clue-footer">
+                      <span class="clue-tag">KEY ARTIFACT</span>
+                      <span class="clue-pts">+100 PTS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2 -->
+              <div class="evidence-card" data-clue-id="2" tabindex="0" role="button" aria-label="Evidence 2: The Missing Key">
+                <div class="card-inner">
+                  <div class="card-face card-front">
+                    <div class="seal-badge wax-seal">
+                      <div class="wax-inner">
+                        <svg class="seal-key-svg" viewBox="0 0 24 24" fill="none" stroke="#C5A15B" stroke-width="2">
+                          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="card-index-label">EVIDENCE #02</span>
+                    <h4 class="sealed-title">VAULT LOG</h4>
+                    <p class="sealed-hint">Chamber lock mechanism report</p>
+                    <span class="action-prompt">CLICK TO BREAK SEAL</span>
+                  </div>
+                  <div class="card-face card-back">
+                    <div class="card-revealed-tag">REVEALED</div>
+                    <div class="clue-icon-small">🗝️</div>
+                    <h4 class="revealed-title">THE MISSING KEY</h4>
+                    <p class="revealed-text">
+                      “The key to the King's private chambers was signed out from the treasury shortly before the murder.”
+                    </p>
+                    <div class="clue-footer">
+                      <span class="clue-tag">OPPORTUNITY</span>
+                      <span class="clue-pts">+100 PTS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 3 -->
+              <div class="evidence-card" data-clue-id="3" tabindex="0" role="button" aria-label="Evidence 3: The Servant's Testimony">
+                <div class="card-inner">
+                  <div class="card-face card-front">
+                    <div class="seal-badge wax-seal">
+                      <div class="wax-inner">
+                        <svg class="seal-ear-svg" viewBox="0 0 24 24" fill="none" stroke="#C5A15B" stroke-width="2">
+                          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+                          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="card-index-label">EVIDENCE #03</span>
+                    <h4 class="sealed-title">GUARD RECORD</h4>
+                    <p class="sealed-hint">Midnight corridor watch statement</p>
+                    <span class="action-prompt">CLICK TO BREAK SEAL</span>
+                  </div>
+                  <div class="card-face card-back">
+                    <div class="card-revealed-tag">REVEALED</div>
+                    <div class="clue-icon-small">🕯️</div>
+                    <h4 class="revealed-title">THE SERVANT’S TESTIMONY</h4>
+                    <p class="revealed-text">
+                      “A servant heard footsteps near the royal chambers around 11 PM but could not identify the person.”
+                    </p>
+                    <div class="clue-footer">
+                      <span class="clue-tag">TIMELINE</span>
+                      <span class="clue-pts">+100 PTS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 4 -->
+              <div class="evidence-card" data-clue-id="4" tabindex="0" role="button" aria-label="Evidence 4: The Torn Ledger">
+                <div class="card-inner">
+                  <div class="card-face card-front">
+                    <div class="seal-badge wax-seal">
+                      <div class="wax-inner">
+                        <svg class="seal-book-svg" viewBox="0 0 24 24" fill="none" stroke="#C5A15B" stroke-width="2">
+                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="card-index-label">EVIDENCE #04</span>
+                    <h4 class="sealed-title">FINANCIAL AUDIT</h4>
+                    <p class="sealed-hint">Torn leaf from castle records</p>
+                    <span class="action-prompt">CLICK TO BREAK SEAL</span>
+                  </div>
+                  <div class="card-face card-back">
+                    <div class="card-revealed-tag">REVEALED</div>
+                    <div class="clue-icon-small">📖</div>
+                    <h4 class="revealed-title">THE TORN LEDGER</h4>
+                    <p class="revealed-text">
+                      “A damaged financial record reveals missing royal funds. The record contains the Treasurer's signature.”
+                    </p>
+                    <div class="clue-footer">
+                      <span class="clue-tag">MOTIVE</span>
+                      <span class="clue-pts">+100 PTS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 5 -->
+              <div class="evidence-card" data-clue-id="5" tabindex="0" role="button" aria-label="Evidence 5: The Secret Letter">
+                <div class="card-inner">
+                  <div class="card-face card-front">
+                    <div class="seal-badge wax-seal">
+                      <div class="wax-inner">
+                        <svg class="seal-letter-svg" viewBox="0 0 24 24" fill="none" stroke="#C5A15B" stroke-width="2">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                          <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="card-index-label">EVIDENCE #05</span>
+                    <h4 class="sealed-title">CONFIDENTIAL NOTE</h4>
+                    <p class="sealed-hint">Recovered from fireplace ashes</p>
+                    <span class="action-prompt">CLICK TO BREAK SEAL</span>
+                  </div>
+                  <div class="card-face card-back">
+                    <div class="card-revealed-tag">REVEALED</div>
+                    <div class="clue-icon-small">✉️</div>
+                    <h4 class="revealed-title">THE SECRET LETTER</h4>
+                    <p class="revealed-text">
+                      “A recovered letter reveals that the Treasurer planned to enter the King's chambers to destroy evidence of financial theft.”
+                    </p>
+                    <div class="clue-footer">
+                      <span class="clue-tag">SMOKING GUN</span>
+                      <span class="clue-pts">+100 PTS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SECTION B: SUSPECTS INTERROGATION (3 Suspect Cards) -->
+          <div class="arena-section suspects-section">
+            <div class="section-header-bar">
+              <div class="section-title-wrap">
+                <span class="section-icon">👑</span>
+                <h3 class="section-heading">ROYAL SUSPECTS & TESTIMONIES</h3>
+              </div>
+              <span class="section-hint">Costs 1 attempt to interrogate &bull; Each suspect examined once</span>
+            </div>
+
+            <div class="suspects-interactive-grid">
+              
+              <!-- Suspect 1: Lord Aldric -->
+              <div class="suspect-card" id="card-suspect-aldric" data-suspect-id="aldric">
+                <div class="card-ornament top-ornament"></div>
+                <div class="suspect-header">
+                  <div class="avatar-svg-container" id="avatar-aldric-arena"></div>
+                  <div class="suspect-meta">
+                    <span class="suspect-house">HOUSE OF THE NORTH</span>
+                    <h4 class="suspect-title-name">Lord Aldric</h4>
+                    <span class="suspect-court-role">The Northern Lord</span>
+                  </div>
+                </div>
+
+                <div class="suspect-body">
+                  <p class="suspect-personality-tag"><strong>Traits:</strong> Honourable, stern, territorial</p>
+                  <div class="suspect-alibi-box">
+                    <span class="alibi-header">INITIAL ALIBI:</span>
+                    <p class="alibi-content">“I was inspecting the northern gate on the King's final night.”</p>
+                  </div>
+                  
+                  <div class="investigation-status-tag not-investigated" id="status-tag-aldric">
+                    <span class="dot"></span> NOT QUESTIONED
+                  </div>
+                </div>
+
+                <div class="suspect-actions">
+                  <button class="btn-royal btn-investigate" data-suspect="aldric" aria-label="Investigate Lord Aldric">
+                    <span class="btn-content">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      INVESTIGATE (1 ATTEMPT)
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Suspect 2: Lady Seraphine -->
+              <div class="suspect-card" id="card-suspect-seraphine" data-suspect-id="seraphine">
+                <div class="card-ornament top-ornament"></div>
+                <div class="suspect-header">
+                  <div class="avatar-svg-container" id="avatar-seraphine-arena"></div>
+                  <div class="suspect-meta">
+                    <span class="suspect-house">COUNCIL OF WHISPERS</span>
+                    <h4 class="suspect-title-name">Lady Seraphine</h4>
+                    <span class="suspect-court-role">The Royal Advisor</span>
+                  </div>
+                </div>
+
+                <div class="suspect-body">
+                  <p class="suspect-personality-tag"><strong>Traits:</strong> Intelligent, persuasive, ambitious</p>
+                  <div class="suspect-alibi-box">
+                    <span class="alibi-header">INITIAL ALIBI:</span>
+                    <p class="alibi-content">“I was reading in the royal library. I heard an argument nearby, but I saw no one.”</p>
+                  </div>
+
+                  <div class="investigation-status-tag not-investigated" id="status-tag-seraphine">
+                    <span class="dot"></span> NOT QUESTIONED
+                  </div>
+                </div>
+
+                <div class="suspect-actions">
+                  <button class="btn-royal btn-investigate" data-suspect="seraphine" aria-label="Investigate Lady Seraphine">
+                    <span class="btn-content">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      INVESTIGATE (1 ATTEMPT)
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Suspect 3: Lord Malrec -->
+              <div class="suspect-card" id="card-suspect-malrec" data-suspect-id="malrec">
+                <div class="card-ornament top-ornament"></div>
+                <div class="suspect-header">
+                  <div class="avatar-svg-container" id="avatar-malrec-arena"></div>
+                  <div class="suspect-meta">
+                    <span class="suspect-house">ROYAL EXCHEQUER</span>
+                    <h4 class="suspect-title-name">Lord Malrec</h4>
+                    <span class="suspect-court-role">The Royal Treasurer</span>
+                  </div>
+                </div>
+
+                <div class="suspect-body">
+                  <p class="suspect-personality-tag"><strong>Traits:</strong> Wealthy, secretive, calculating</p>
+                  <div class="suspect-alibi-box">
+                    <span class="alibi-header">INITIAL ALIBI:</span>
+                    <p class="alibi-content">“I never entered the King's chambers. The treasury key was accessible to several officials.”</p>
+                  </div>
+
+                  <div class="investigation-status-tag not-investigated" id="status-tag-malrec">
+                    <span class="dot"></span> NOT QUESTIONED
+                  </div>
+                </div>
+
+                <div class="suspect-actions">
+                  <button class="btn-royal btn-investigate" data-suspect="malrec" aria-label="Investigate Lord Malrec">
+                    <span class="btn-content">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      INVESTIGATE (1 ATTEMPT)
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Royal Detective Journal -->
+        <aside class="arena-journal-sidebar">
+          <div class="journal-panel">
+            <div class="journal-leather-header">
+              <div class="journal-emblem">📖</div>
+              <div class="journal-title-box">
+                <h3 class="journal-heading">DETECTIVE JOURNAL</h3>
+                <span class="journal-tagline">ROYAL CASE DOSSIER & RECORD</span>
+              </div>
+            </div>
+
+            <!-- Journal tabs -->
+            <div class="journal-tabs">
+              <button class="jtab-btn active" data-tab="clues" id="tab-btn-clues">
+                EVIDENCE (<span id="jtab-clues-count">0</span>)
+              </button>
+              <button class="jtab-btn" data-tab="testimonies" id="tab-btn-testimonies">
+                TESTIMONIES (<span id="jtab-testimonies-count">0</span>)
+              </button>
+              <button class="jtab-btn" data-tab="deduction" id="tab-btn-deduction">
+                DEDUCTION
+              </button>
+            </div>
+
+            <!-- Tab Content: Clues -->
+            <div class="journal-tab-pane active" id="pane-clues">
+              <div class="journal-entries-list" id="journal-clues-list">
+                <div class="journal-empty-state" id="journal-empty-msg">
+                  <span class="empty-icon">🔏</span>
+                  <p>No evidence has been discovered yet. Inspect the sealed cards in the chamber to document clues.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Content: Testimonies -->
+            <div class="journal-tab-pane hidden" id="pane-testimonies">
+              <div class="journal-entries-list" id="journal-testimonies-list">
+                <div class="journal-empty-state" id="testimonies-empty-msg">
+                  <span class="empty-icon">⚖️</span>
+                  <p>No suspects interrogated yet. Use your investigation attempts to question the three lords.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Content: Deductive Reasoning -->
+            <div class="journal-tab-pane hidden" id="pane-deduction">
+              <div class="deduction-guide">
+                <h4 class="deduction-subtitle">THE TRAIN OF EVIDENCE</h4>
+                <ul class="deduction-checklist">
+                  <li id="deduct-dagger" class="checklist-item">
+                    <span class="chk-box">◻</span>
+                    <span><strong>Weapon Origin:</strong> Identify where the murder dagger originated.</span>
+                  </li>
+                  <li id="deduct-key" class="checklist-item">
+                    <span class="chk-box">◻</span>
+                    <span><strong>Opportunity:</strong> Who had access to the locked chamber key?</span>
+                  </li>
+                  <li id="deduct-timeline" class="checklist-item">
+                    <span class="chk-box">◻</span>
+                    <span><strong>Timeline:</strong> Verify corridor footsteps at 11:00 PM.</span>
+                  </li>
+                  <li id="deduct-motive" class="checklist-item">
+                    <span class="chk-box">◻</span>
+                    <span><strong>Motive:</strong> Uncover reasons for violence or theft.</span>
+                  </li>
+                  <li id="deduct-intent" class="checklist-item">
+                    <span class="chk-box">◻</span>
+                    <span><strong>Premeditation:</strong> Locate written proof of planned entry.</span>
+                  </li>
+                </ul>
+
+                <div class="deduction-tip-box">
+                  <span class="tip-icon">💡</span>
+                  <p class="tip-text">
+                    All evidence must align without contradiction. When ready, formally present your accusation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Journal Action: Accuse Button -->
+            <div class="journal-footer-action">
+              <button id="btn-arena-accuse" class="btn-royal btn-primary btn-accuse-large">
+                <span class="btn-glow-crimson"></span>
+                <span class="btn-content">
+                  <span class="accuse-icon">⚔️</span>
+                  <span>MAKE ACCUSATION</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN 4: VICTORY OR DEFEAT RESULTS        -->
+    <!-- ========================================== -->
+    <section id="screen-results" class="game-screen hidden">
+      <div class="results-container">
+        
+        <!-- Results Banner (Dynamic styling via JS) -->
+        <div id="results-banner" class="results-header-banner victory">
+          <div class="results-crest-display" id="results-crest-icon">👑</div>
+          <span class="results-super-title" id="results-super-title">THE ROYAL VERDICT</span>
+          <h2 class="results-main-title" id="results-title">THE TRAITOR HAS BEEN EXPOSED</h2>
+          <p class="results-tagline" id="results-tagline">Justice is served. The realm is saved from civil war.</p>
+        </div>
+
+        <!-- Score & Stats Ribbon -->
+        <div class="results-score-ribbon">
+          <div class="result-stat-card">
+            <span class="stat-caption">FINAL SCORE</span>
+            <div class="stat-highlight gold">
+              <span id="res-val-score">650</span> <small>PTS</small>
+            </div>
+            <span class="stat-sub" id="res-best-score-label">BEST: 0 PTS</span>
+          </div>
+
+          <div class="result-stat-card">
+            <span class="stat-caption">EVIDENCE FOUND</span>
+            <div class="stat-highlight">
+              <span id="res-val-clues">5</span> / 5
+            </div>
+            <span class="stat-sub">CHAMBER RELICS</span>
+          </div>
+
+          <div class="result-stat-card">
+            <span class="stat-caption">ATTEMPTS USED</span>
+            <div class="stat-highlight">
+              <span id="res-val-attempts-used">1</span> / 3
+            </div>
+            <span class="stat-sub" id="res-val-attempts-remaining">+50 BONUS PTS</span>
+          </div>
+
+          <div class="result-stat-card">
+            <span class="stat-caption">ACCUSED LORD</span>
+            <div class="stat-highlight" id="res-val-accused-name">
+              Lord Malrec
+            </div>
+            <span class="stat-sub" id="res-val-accused-status">GUILTY OF REGICIDE</span>
+          </div>
+        </div>
+
+        <!-- Complete Evidence Breakdown / Case Explanation -->
+        <div class="results-dossier-card">
+          <div class="dossier-header">
+            <span class="dossier-icon">⚖️</span>
+            <h3 class="dossier-title" id="res-explanation-title">THE CHAIN OF EVIDENCE & TRUTH</h3>
+          </div>
+          
+          <div class="dossier-body" id="res-explanation-content">
+            <!-- Dynamic explanation injected by script.js -->
+          </div>
+        </div>
+
+        <!-- Result Screen Action Buttons -->
+        <div class="results-actions">
+          <button id="btn-play-again" class="btn-royal btn-primary">
+            <span class="btn-glow"></span>
+            <span class="btn-content">
+              🔄 PLAY AGAIN
+            </span>
+          </button>
+          
+          <button id="btn-return-kingdom" class="btn-royal btn-secondary">
+            🏰 RETURN TO KINGDOM
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: INTERROGATION TESTIMONY             -->
+  <!-- ========================================== -->
+  <div id="modal-interrogation" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-suspect-name">
+    <div class="modal-box interrogation-modal">
+      <button class="modal-close-btn" id="btn-close-interrogation" aria-label="Close interrogation dialog">&times;</button>
+      
+      <div class="modal-header-suspect">
+        <div class="modal-avatar-container" id="modal-suspect-avatar"></div>
+        <div class="modal-suspect-titles">
+          <span class="modal-eyebrow">OFFICIAL COURT INTERROGATION</span>
+          <h3 id="modal-suspect-name" class="modal-suspect-name">Lord Aldric</h3>
+          <span id="modal-suspect-role" class="modal-suspect-role">The Northern Lord</span>
+        </div>
+      </div>
+
+      <div class="modal-divider"></div>
+
+      <div class="modal-testimony-body">
+        <div class="testimony-quote-box">
+          <span class="quote-symbol">“</span>
+          <p id="modal-testimony-text" class="testimony-text">
+            “Two guards were stationed at the northern gate. They may confirm my presence there.”
+          </p>
+        </div>
+
+        <div class="testimony-analysis-grid">
+          <div class="analysis-card known">
+            <span class="analysis-label">VERIFIED BY INQUEST</span>
+            <p id="modal-analysis-known" class="analysis-detail">Guards verify someone patrolled the ramparts near 11 PM.</p>
+          </div>
+          <div class="analysis-card uncertain">
+            <span class="analysis-label">LINGERING DISCREPANCY</span>
+            <p id="modal-analysis-uncertain" class="analysis-detail">The guard's post leaves the inner corridor unaccounted for.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="inquest-note">Testimony recorded into your Detective Journal</span>
+        <button id="btn-confirm-testimony" class="btn-royal btn-primary">
+          RECORD IN JOURNAL & RETURN
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ACCUSATION SELECTION & CONFIRMATION -->
+  <!-- ========================================== -->
+  <div id="modal-accusation" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-accusation-title">
+    <div class="modal-box accusation-modal">
+      <button class="modal-close-btn" id="btn-close-accusation" aria-label="Close accusation dialog">&times;</button>
+
+      <div class="accusation-modal-header">
+        <span class="royal-decree-tag">COURT OF HIGH JUSTICE</span>
+        <h3 id="modal-accusation-title" class="accusation-modal-title">WHO DO YOU ACCUSE OF REGICIDE?</h3>
+        <p class="accusation-modal-warning">
+          Choose carefully. A false accusation costs <strong>50 points</strong> and exhausts <strong>1 investigation attempt</strong>. A true accusation brings victory.
+        </p>
+      </div>
+
+      <!-- Selectable Suspect Tiles -->
+      <div class="accusation-suspects-selector" id="accusation-selector-group">
+        
+        <!-- Option: Aldric -->
+        <div class="accuse-tile" data-suspect="aldric" tabindex="0" role="radio" aria-checked="false">
+          <div class="accuse-tile-avatar" id="accuse-avatar-aldric"></div>
+          <div class="accuse-tile-info">
+            <h4 class="accuse-tile-name">Lord Aldric</h4>
+            <span class="accuse-tile-role">The Northern Lord</span>
+            <p class="accuse-tile-alibi">Northern Gate Watch</p>
+          </div>
+          <div class="selection-indicator">
+            <span class="check-mark">✓</span>
+          </div>
+        </div>
+
+        <!-- Option: Seraphine -->
+        <div class="accuse-tile" data-suspect="seraphine" tabindex="0" role="radio" aria-checked="false">
+          <div class="accuse-tile-avatar" id="accuse-avatar-seraphine"></div>
+          <div class="accuse-tile-info">
+            <h4 class="accuse-tile-name">Lady Seraphine</h4>
+            <span class="accuse-tile-role">The Royal Advisor</span>
+            <p class="accuse-tile-alibi">Royal Library Reading</p>
+          </div>
+          <div class="selection-indicator">
+            <span class="check-mark">✓</span>
+          </div>
+        </div>
+
+        <!-- Option: Malrec -->
+        <div class="accuse-tile" data-suspect="malrec" tabindex="0" role="radio" aria-checked="false">
+          <div class="accuse-tile-avatar" id="accuse-avatar-malrec"></div>
+          <div class="accuse-tile-info">
+            <h4 class="accuse-tile-name">Lord Malrec</h4>
+            <span class="accuse-tile-role">The Royal Treasurer</span>
+            <p class="accuse-tile-alibi">Exchequer Vault Accounting</p>
+          </div>
+          <div class="selection-indicator">
+            <span class="check-mark">✓</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Dynamic Selection Warning Banner -->
+      <div id="accuse-error-message" class="accuse-error-banner hidden">
+        Please select a suspect before confirming your royal accusation.
+      </div>
+
+      <div class="accusation-modal-actions">
+        <button id="btn-cancel-accusation" class="btn-royal btn-secondary">
+          RETURN TO EVIDENCE
+        </button>
+        <button id="btn-confirm-accusation" class="btn-royal btn-accuse-pulse">
+          <span class="btn-glow-crimson"></span>
+          <span class="btn-content">
+            ⚔️ CONFIRM ACCUSATION
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: INCORRECT ACCUSATION WARNING        -->
+  <!-- ========================================== -->
+  <div id="modal-false-accusation" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-false-title">
+    <div class="modal-box false-accusation-modal">
+      <div class="false-icon-wrap">⚠️</div>
+      <h3 id="modal-false-title" class="false-modal-title">ACCUSATION DISPROVEN</h3>
+      <p id="modal-false-explanation" class="false-modal-body">
+        The royal tribunal cross-referenced the evidence and rejected the accusation.
+      </p>
+      
+      <div class="penalty-recap">
+        <span class="penalty-tag">-50 POINTS</span>
+        <span class="penalty-tag">-1 INVESTIGATION ATTEMPT</span>
+      </div>
+
+      <p id="modal-false-status" class="false-modal-sub">
+        You have 2 attempts remaining to uncover the true culprit.
+      </p>
+
+      <button id="btn-dismiss-false" class="btn-royal btn-primary">
+        CONTINUE INVESTIGATION
+      </button>
+    </div>
+  </div>
+
+  <!-- Javascript Logic -->
+  <script src="script.js"></script>
+</body>
+</html>
